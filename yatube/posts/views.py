@@ -1,7 +1,8 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
-from .forms import PostForm, CommentForm
-from .models import Group, Post, User, Follow
+
+from .forms import CommentForm, PostForm
+from .models import Follow, Group, Post, User
 from .utils import page_paginator
 
 
@@ -30,12 +31,9 @@ def profile(request, username):
     """Страница с информацией об авторе"""
     template = 'posts/profile.html'
     author = get_object_or_404(User, username=username)
-
-    following = None
-    if request.user.id is not None:
-        following = False
-        if Follow.objects.filter(user=request.user, author=author).exists():
-            following = True
+    following = ((request.user.id is not None)
+                 and Follow.objects.filter(user=request.user,
+                                           author=author).exists())
     context = {
         'author': author,
         'page_obj': page_paginator(request, author.posts.all()),

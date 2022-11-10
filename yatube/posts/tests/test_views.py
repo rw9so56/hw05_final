@@ -1,14 +1,17 @@
-from http import HTTPStatus
-from django import forms
-from django.test import Client, TestCase, override_settings
-from django.urls import reverse
-from posts.utils import POST_ON_PAGE
-from ..models import Group, Post, User, Follow
 import shutil
 import tempfile
-from django.core.files.uploadedfile import SimpleUploadedFile
+from http import HTTPStatus
+
+from django import forms
 from django.conf import settings
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase, override_settings
+from django.urls import reverse
+
+from posts.utils import POST_ON_PAGE
+
+from ..models import Follow, Group, Post, User
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -36,7 +39,7 @@ class ViewsTests(TestCase):
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='Test_slug',
-            description='Тестовое описание',
+            description='Тестовое описание группы',
         )
         cls.post = Post.objects.create(
             author=cls.user,
@@ -65,7 +68,8 @@ class ViewsTests(TestCase):
             reverse('posts:profile', kwargs={'username': self.post.author}),
             reverse('posts:post_detail',
                     kwargs={'post_id': ViewsTests.post.id}),
-            reverse('posts:post_edit', kwargs={'post_id': ViewsTests.post.id})
+            reverse('posts:post_edit', kwargs={'post_id': ViewsTests.post.id}),
+            reverse('posts:follow_index'),
         ]
         for destination_url in destination_urls:
             with self.subTest(destination_url=destination_url):
@@ -86,6 +90,7 @@ class ViewsTests(TestCase):
             reverse('posts:post_edit', kwargs={'post_id': ViewsTests.post.id}):
             'posts/create_post.html',
             reverse('posts:post_create'): 'posts/create_post.html',
+            reverse('posts:follow_index'): 'posts/follow.html',
         }
         for reverse_name, template in templates_pages_names.items():
             with self.subTest(reverse_name=reverse_name):
@@ -206,13 +211,14 @@ class ViewsTests(TestCase):
             reverse('posts:profile_follow',
                     kwargs={'username': self.user.username}),
             follow=True)
-        self.assertRedirects(response, '/follow/')
+        self.assertRedirects(response, reverse('posts:follow_index'))
         self.assertEqual(Follow.objects.count(), follow_count + 1)
         response = self.authorized_client.post(
             reverse('posts:profile_unfollow',
                     kwargs={'username': self.user.username}),
             follow=True)
-        self.assertRedirects(response, f'/profile/{self.user.username}/')
+        self.assertRedirects(response, reverse('posts:profile',
+                             kwargs={'username': self.user.username}))
         self.assertEqual(Follow.objects.count(), follow_count)
 
     def test_follow_for_new_post(self):

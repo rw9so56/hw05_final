@@ -1,5 +1,7 @@
 from http import HTTPStatus
+
 from django.test import Client, TestCase
+
 from posts.models import Group, Post, User
 
 
@@ -36,6 +38,7 @@ class PostURLTests(TestCase):
             f'/posts/{post_id}/': 'posts/post_detail.html',
             '/create/': 'posts/create_post.html',
             f'/posts/{post_id}/edit/': 'posts/create_post.html',
+            '/follow/': 'posts/follow.html',
         }
         for address, template in url_templates_names.items():
             with self.subTest(address=address):
@@ -61,7 +64,8 @@ class PostURLTests(TestCase):
         post_id = PostURLTests.post.id
         page_list = {
             self.author.get(f'/posts/{post_id}/edit/'),
-            self.authorized_client.get('/create/')
+            self.authorized_client.get('/create/'),
+            self.authorized_client.get('/follow/'),
         }
         for page in page_list:
             with self.subTest(page=page):
